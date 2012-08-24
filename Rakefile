@@ -35,7 +35,7 @@ end
 
 task :copy_to_fat => [ :mount_bootfs ] do
   def copy_to_bootfs( infile, outfile )
-      sh "sudo cp #{@deploy_dir}/#{infile} #{@bootfs_mount}"
+      sh "sudo cp #{@deploy_dir}/#{infile} #{@bootfs_mount}/#{outfile}"
   end
 
   { "MLO" => "MLO",
