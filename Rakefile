@@ -43,6 +43,7 @@ task :copy_to_fat => [ :mount_bootfs ] do
     "uImage-beaglebone.bin" => "uImage" }.each_pair { |k,v|
     copy_to_bootfs( k, v )
   }
+  sh "sudo cp ./local-scripts/uEnv.txt #{@bootfs_mount}"
 end
 
 task :mk_bootfs => [ :copy_to_fat, :umount_bootfs] 
