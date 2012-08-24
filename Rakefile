@@ -1,12 +1,19 @@
 
 @deploy_dir = "/mnt/usbstick/beaglebone"
-@destination_dev = "/dev/sdd"
+@destination_dev = "/dev/sde"
 
-@bootfs_mount = "/mnt/bootfs"
-@rootfs_mount = "/mnt/rootfs"
+@boot_mount = "/mnt/bootfs"
+@root_mount = "/mnt/rootfs"
 
 def dest_partition(i, device = @destination_dev )
   device + i.to_s
+end
+
+def boot_partition; dest_partition(1); end
+def root_partition; dest_partition(2); end
+
+def is_mounted( device )
+  `mount | grep #{device}`.length > 0
 end
 
 desc "Format the SD card in #{@destination_dev}"
@@ -14,42 +21,54 @@ task :format_card do
   sh "sudo local-scripts/format_card.sh #{@destination_dev}"
 end
 
-task :mount_all => [ :mount_bootfs, :mount_rootfs ]
-task :umount_all => [ :umount_bootfs, :umount_rootfs ]
+task :mount_all => [ :mount_boot, :mount_root ]
+task :umount_all => [ :umount_boot, :umount_root ]
 
-task :mount_bootfs do
-  sh "sudo mount -t vfat #{dest_partition(1)} #{@bootfs_mount}"
+file @boot_mount do
+  sh "sudo mkdir #{@boot_mount}"
 end
 
-task :umount_bootfs do
-  sh "sudo umount #{@bootfs_mount}"
+task :mount_boot => [ @boot_mount ] do
+  sh "sudo mount -t vfat #{boot_partition} #{@boot_mount}" unless is_mounted boot_partition
 end
 
-task :mount_rootfs do
-  sh "sudo mount -t ext3 #{dest_partition(2)} #{@rootfs_mount}"
+task :umount_boot do
+  sh "sudo umount #{@boot_mount}" if is_mounted root_partition
 end
 
-task :umount_rootfs do
-  sh "sudo umount #{@rootfs_mount}"
+file @root_mount do
+  sh "sudo mkdir #{@root_mount}"
 end
 
-task :copy_to_fat => [ :mount_bootfs ] do
-  def copy_to_bootfs( infile, outfile )
-      sh "sudo cp #{@deploy_dir}/#{infile} #{@bootfs_mount}/#{outfile}"
+task :mount_root => [ @root_mount ] do
+  sh "sudo mount -t ext3 #{root_partition} #{@root_mount}" unless is_mounted root_partition
+end
+
+task :umount_root do
+  sh "sudo umount #{@root_mount}"
+end
+
+task :copy_to_boot => [ :mount_boot ] do
+  def copy_to_boot( infile, outfile )
+      sh "sudo cp #{@deploy_dir}/#{infile} #{@boot_mount}/#{outfile}"
   end
 
   { "MLO" => "MLO",
     "u-boot.img" => "u-boot.img",
     "uImage-beaglebone.bin" => "uImage" }.each_pair { |k,v|
-    copy_to_bootfs( k, v )
+    copy_to_boot( k, v )
   }
-  sh "sudo cp ./local-scripts/uEnv.txt #{@bootfs_mount}"
+  sh "sudo cp ./local-scripts/uEnv.txt #{@boot_mount}"
 end
 
-task :mk_bootfs => [ :copy_to_fat, :umount_bootfs] 
+task :mk_boot => [ :copy_to_boot, :umount_boot] 
 
-task :copy_to_ext3 => [ :mount_rootfs ] do
-  sh "sudo tar -xjv -C #{@rootfs_mount} -f #{@deploy_dir}/systemd-image-beaglebone.tar.bz2"
+task :copy_to_root => [ :mount_root ] do
+  sh "sudo tar -xjv -C #{@root_mount} -f #{@deploy_dir}/systemd-image-beaglebone.tar.bz2"
 end
 
-task :mk_rootfs => [ :copy_to_ext3, :umount_rootfs]
+task :mk_root => [ :copy_to_root, :umount_root]
+
+task :copy_all => [ :copy_to_boot, :copy_to_root ]
+
+task :make_all => [ :copy_all, :umount_all ]
