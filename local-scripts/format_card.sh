@@ -5,6 +5,10 @@
 #
 # Parts of the procudure base on the work of Denys Dmytriyenko
 # http://wiki.omap.com/index.php/MMC_Boot_Format
+#
+# AMM:  Downloaded from: 
+#    http://angstrom.s3.amazonaws.com/demo/beaglebone/mkcard.txt
+# (a mirror of the beagleboard.org site) and renamed.
 
 export LC_ALL=C
 
