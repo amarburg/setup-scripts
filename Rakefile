@@ -1,4 +1,6 @@
 
+require_relative "local/rake"
+
 @deploy_dir = "/mnt/usbstick/beaglebone"
 @destination_dev = "/dev/sde"
 
@@ -12,13 +14,14 @@ end
 def boot_partition; dest_partition(1); end
 def root_partition; dest_partition(2); end
 
-def sudosh(x); sudosh " #{x}"; end
-
-def is_mounted( device )
-  `mount | grep #{device}`.length > 0
-end
-
 ####################
+
+Partition.new( "boot" ) do |p|
+  p.partition_number = 1
+  p.fs = "vfat"
+  p.mkfs_flags = "-F 32 -n \"boot\""
+  p.mountpoint = "/mnt/bootfs"
+end
 
 
 def machine
