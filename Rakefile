@@ -1,28 +1,21 @@
 
 require_relative "local/rake"
 
-@deploy_dir = "/mnt/usbstick/beaglebone"
-@destination_dev = "/dev/sde"
-
-@boot_mount = "/mnt/bootfs"
-@root_mount = "/mnt/rootfs"
-
-def dest_partition(i, device = @destination_dev )
-  device + i.to_s
-end
-
-def boot_partition; dest_partition(1); end
-def root_partition; dest_partition(2); end
-
-####################
+@deploy_dir = ENV['DEPLOY_DIR'] || File::dirname(__FILE__) + "/build/tmp-angstrom_v2012_05-eglibc/deploy/images/beaglebone/"
 
 Partition.new( "boot" ) do |p|
   p.partition_number = 1
   p.fs = "vfat"
-  p.mkfs_flags = "-F 32 -n \"boot\""
+  p.mkfs = "mkfs.vfat -F 32 -n \"boot\""
   p.mountpoint = "/mnt/bootfs"
 end
 
+Partition.new( "root" ) do |p|
+  p.partition_number = 2
+  p.fs = "ext3"
+  p.mkfs = "mke2fs -j -L \"Angstrom\""
+  p.mountpoint = "/mnt/rootfs"
+end
 
 def machine
   `grep MACHINE conf/auto.conf`.split('"')[1]
@@ -62,33 +55,6 @@ end
 desc "Format the SD card in #{@destination_dev}"
 task :format_card do
   sudosh "local/format_card.sh #{@destination_dev}"
-end
-
-task :mount_all => [ :mount_boot, :mount_root ]
-task :umount_all => [ :umount_boot, :umount_root ]
-
-file @boot_mount do
-  sudosh "mkdir #{@boot_mount}"
-end
-
-task :mount_boot => [ @boot_mount ] do
-  sudosh" mount -t vfat #{boot_partition} #{@boot_mount}" unless is_mounted boot_partition
-end
-
-task :umount_boot do
-  sudosh "umount #{@boot_mount}" if is_mounted root_partition
-end
-
-file @root_mount do
-  sudosh "mkdir #{@root_mount}"
-end
-
-task :mount_root => [ @root_mount ] do
-  sudosh "mount -t ext3 #{root_partition} #{@root_mount}" unless is_mounted root_partition
-end
-
-task :umount_root do
-  sudosh "umount #{@root_mount}"
 end
 
 task :copy_to_boot => [ :mount_boot ] do
