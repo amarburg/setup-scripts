@@ -3,6 +3,11 @@ require_relative "rake/partitions"
 
 def sudosh(x); sh "sudo #{x}"; end
 
+def machine
+  @machine ||= (ENV['MACHINE'] || `grep MACHINE conf/auto.conf`.split('"')[1])
+end
+
+
 
 def device 
   d = ENV['DEVICE']
