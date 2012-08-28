@@ -3,12 +3,13 @@
 class Partition
   include Rake::DSL
 
-  attr_accessor :name, :fs, :mkfs, :partition_number
+  attr_accessor :name, :fs, :mkfs, :partition_number, :before_mkfs
   attr_writer :mountpoint
 
   def initialize( name )
     @name = name
     @mountpoint = nil
+    @files = []
     yield self
     define_tasks
   end
@@ -23,6 +24,12 @@ class Partition
 
       desc "Make the filesystem"
       task :mkfs => [:unmount] do; makefs; end
+
+      desc "Copy in files"
+      task :copy => [:mount] do; copy_files; end
+
+      desc "Make the FS and copy in the files"
+      task :make_and_copy => [ :mkfs, :copy ]
     end
 
     desc "Mount all partitions"
@@ -30,12 +37,6 @@ class Partition
 
     desc "Unmount all partitions"
     task :unmount_all => "#{name}:unmount".to_s
-  end
-
-  def device 
-    d = ENV['DEVICE']
-    raise "Must set device for SD card.  Run as \"rake {taskname} DEVICE=sdx\"" unless d
-    "/dev/#{d}"
   end
 
   def partition
@@ -66,9 +67,34 @@ class Partition
 
   def makefs
     raise "mkfs string not defined" unless @mkfs
-    puts "Running #{@mkfs}"
+    before_mkfs.call(partition) if before_mkfs
+    
     sudosh [ @mkfs, partition ].join(' ')
   end
 
+  def files( *f )
+    @files.push( *f )
+  end
+
+  def copy_files
+    @files.each { |file|
+      src,dest = case file
+                 when Hash
+                   fname = file.keys.first
+                   [fname, file[fname] ]
+                 else
+                   [file, File.basename(file)]
+                 end
+      dest = [mountpoint,dest].join('/')
+      puts "Copying #{src} to #{dest}"
+    }
+  end
+
+end
+
+class RootPartition < Partition
+  def copy_files
+  sudosh "tar -xjv -C #{mountpoint} -f #{in_deploy_dir("systemd-image-beaglebone.tar.bz2")}"
+  end
 end
 
