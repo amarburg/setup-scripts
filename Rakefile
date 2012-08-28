@@ -1,7 +1,6 @@
 
 require_relative "local/rake"
 
-
 bootfs = Partition.new( "boot" ) do |p|
   p.partition_number = 1
   p.fs = "vfat"
@@ -23,10 +22,6 @@ rootfs = RootPartition.new( "root" ) do |p|
   p.fs = "ext3"
   p.mkfs = "mke2fs -j -L \"Angstrom\""
   p.mountpoint = "/mnt/rootfs"
-end
-
-def machine
-  @machine ||= (ENV['MACHINE'] || `grep MACHINE conf/auto.conf`.split('"')[1])
 end
 
 namespace :oe do
