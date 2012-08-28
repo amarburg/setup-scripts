@@ -3,20 +3,26 @@
 class Partition
   include Rake::DSL
 
-  attr_accessor :name, :fs, :mkfs_flags, :partition_number
+  attr_accessor :name, :fs, :mkfs, :partition_number
   attr_writer :mountpoint
 
   def initialize( name )
     @name = name
     @mountpoint = nil
     yield self
+    define_tasks
+  end
 
+  def define_tasks
     namespace name do
       desc "Mount #{name}"
       task :mount do; mount; end
 
       desc "Unmount #{name}"
       task :unmount do; unmount; end
+
+      desc "Make the filesystem"
+      task :mkfs => [:unmount] do; makefs; end
     end
 
     desc "Mount all partitions"
@@ -28,7 +34,7 @@ class Partition
 
   def device 
     d = ENV['DEVICE']
-    raise "Must set device for SD card" unless d
+    raise "Must set device for SD card.  Run as \"rake {taskname} DEVICE=sdx\"" unless d
     "/dev/#{d}"
   end
 
@@ -40,14 +46,28 @@ class Partition
     @mountpoint ||= "/mnt/#{name}"
   end
 
+  def mounted?
+    is_mounted partition
+  end
+
   def mount
-    puts "Mounting #{name}"
-    sudosh [ "mount -t", fs, partition, mountpoint ].join(' ')
+    unless mounted?
+      puts "Mounting #{name}"
+      sudosh [ "mount -t", fs, partition, mountpoint ].join(' ')
+    end
   end
 
   def unmount
-    puts "Unmounting #{name}"
-    sudosh [ "umount", mountpoint ].join(' ')
+    if mounted?
+      puts "Unmounting #{name}"
+      sudosh [ "umount", mountpoint ].join(' ') 
+    end
+  end
+
+  def makefs
+    raise "mkfs string not defined" unless @mkfs
+    puts "Running #{@mkfs}"
+    sudosh [ @mkfs, partition ].join(' ')
   end
 
 end
