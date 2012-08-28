@@ -61,7 +61,7 @@ end
 
 ####################
 
-desc "Format the SD card in #{device}"
+desc "Format the SD card"
 task :format_card do
   sudosh "local/format_card.sh #{device}"
   sudosh "sync"
