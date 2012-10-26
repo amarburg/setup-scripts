@@ -48,10 +48,12 @@ namespace :oe do
       sh ". ~/.oe/environment-angstromv2012.05; bitbake #{x}"
     end
 
+    desc "Build the kernel"
     task :kernel do
       bitbake "virtual/kernel" 
     end
 
+    desc "Build the systemd image"
     task :systemd_image do
       bitbake "systemd-image" 
     end
@@ -61,20 +63,26 @@ end
 
 ####################
 
-desc "Format the SD card"
-task :format_card do
-  sudosh "local/format_card.sh #{device}"
-  sudosh "sync"
-  sudosh "sync"
-  sudosh "sync"
-  #sudosh "dmsetup remove #{File.basename(partition)}" if `sudo dmsetup ls | grep #{File.basename(partition)}`.length > 0
-  [rootfs, bootfs].each { |fs|
-    sudosh "dmsetup remove #{File.basename(fs.partition)}" if `sudo dmsetup ls | grep #{File.basename(fs.partition)}`.length > 0
-  }
+namespace :sd do
+
+  desc "Format the SD card"
+  task :format_card do
+    sudosh "local/format_card.sh #{device}"
+    sudosh "sync"
+    sudosh "sync"
+    sudosh "sync"
+    #sudosh "dmsetup remove #{File.basename(partition)}" if `sudo dmsetup ls | grep #{File.basename(partition)}`.length > 0
+    [rootfs, bootfs].each { |fs|
+      sudosh "dmsetup remove #{File.basename(fs.partition)}" if `sudo dmsetup ls | grep #{File.basename(fs.partition)}`.length > 0
+    }
+  end
+
+  task :copy_all => ["boot", "root"].map { |partition|
+                       "#{partition}:mkfs_then_copy".to_sym  }
+
+  task :make_all => [ :copy_all, :unmount_all ]
+
+  desc "Format, mkfs, and copy files to a card.  Destroys any existing data on the card without asking!"
+  task :create_card => [ :unmount_all, :format_card, :make_all, :unmount_all ]
+
 end
-
-task :copy_all => [ "boot:make_and_copy".to_sym, "root:make_and_copy".to_sym ]
-task :make_all => [ :copy_all, :unmount_all ]
-
-desc "Format, mkfs, and copy files to a card.  Destroys any existing data on the card without asking!"
-task :create_card => [ :unmount_all, :format_card, :make_all, :unmount_all ]

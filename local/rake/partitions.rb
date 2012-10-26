@@ -15,28 +15,30 @@ class Partition
   end
 
   def define_tasks
-    namespace name do
-      desc "Mount #{name}"
-      task :mount do; mount; end
+    namespace :sd do
+      namespace name do
+        desc "Mount #{name}"
+        task :mount do; mount; end
 
-      desc "Unmount #{name}"
-      task :unmount do; unmount; end
+        desc "Unmount #{name}"
+        task :unmount do; unmount; end
 
-      desc "Make the filesystem"
-      task :mkfs => [:unmount] do; makefs; end
+        desc "Make the filesystem"
+        task :mkfs => [:unmount] do; makefs; end
 
-      desc "Copy in files"
-      task :copy => [:mount] do; copy_files; end
+        desc "Copy in files"
+        task :copy => [:mount] do; copy_files; end
 
-      desc "Make the FS and copy in the files"
-      task :make_and_copy => [ :mkfs, :copy ]
+        desc "Make the FS and copy in the files"
+        task :mkfs_then_copy => [ :mkfs, :copy ]
+      end
+
+      desc "Mount all partitions"
+      task :mount_all => "#{name}:mount".to_s
+
+      desc "Unmount all partitions"
+      task :unmount_all => "#{name}:unmount".to_s
     end
-
-    desc "Mount all partitions"
-    task :mount_all => "#{name}:mount".to_s
-
-    desc "Unmount all partitions"
-    task :unmount_all => "#{name}:unmount".to_s
   end
 
   def partition
