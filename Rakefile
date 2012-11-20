@@ -37,6 +37,11 @@ namespace :oe do
     sh "./oebb.sh config #{ENV['MACHINE']}"
   end
 
+  desc "Run oebb.sh reset"
+  task :reset => [:machine] do
+    sh "./oebb.sh reset"
+  end
+
   desc "Update the layers"
   task :update => [:machine] do
     sh "./oebb.sh update"
