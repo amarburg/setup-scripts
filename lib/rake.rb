@@ -21,7 +21,7 @@ end
 
 
 def deploy_dir
-  @deploy_dir ||= (ENV['DEPLOY_DIR'] || File::dirname(__FILE__) + "/../build/tmp-angstrom_v2012_05-eglibc/deploy/images/beaglebone")
+  @deploy_dir ||= (ENV['DEPLOY_DIR'] || File::dirname(__FILE__) + "/../deploy/eglibc/images/beaglebone/")
 end
 
 def in_deploy_dir( fname )

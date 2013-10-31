@@ -8,12 +8,12 @@ bootfs = Partition.new( "boot" ) do |p|
     sudosh "dd if=/dev/zero of=#{partition} bs=512 count=1" 
   }
   p.mkfs = "mkfs.vfat -F 32 -n \"boot\""
-  p.mountpoint = "/mnt/bootfs"
+  p.mountpoint = "/tmp/beaglebone/bootfs"
 
   p.files in_deploy_dir( "MLO" ),
           in_deploy_dir( "u-boot.img" ),
-          { in_deploy_dir( "uImage-beaglebone.bin" ) => "uImage" },
-          "local/uEnv.txt"
+#          { in_deploy_dir( "uImage-beaglebone.bin" ) => "uImage" },
+          "lib/uEnv.txt"
 
  end
 
@@ -21,7 +21,7 @@ rootfs = RootPartition.new( "root" ) do |p|
   p.partition_number = 2
   p.fs = "ext3"
   p.mkfs = "mke2fs -j -L \"Angstrom\""
-  p.mountpoint = "/mnt/rootfs"
+  p.mountpoint = "/tmp/beaglebone/rootfs"
 end
 
 namespace :oe do
