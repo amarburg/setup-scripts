@@ -22,6 +22,7 @@ rootfs = RootPartition.new( "root" ) do |p|
   p.fs = "ext3"
   p.mkfs = "mke2fs -j -L \"Angstrom\""
   p.mountpoint = "/tmp/beaglebone/rootfs"
+  p.image = in_deploy_dir("systemd-image-beaglebone.tar.gz")
 end
 
 namespace :oe do
@@ -71,11 +72,12 @@ end
 namespace :sd do
 
   desc "Format the SD card"
-  task :format_card do
-    sudosh "local/format_card.sh #{device}"
+  task :format do
+    sudosh "lib/format_card.sh #{device}"
     sudosh "sync"
     sudosh "sync"
     sudosh "sync"
+    sleep(2)
     #sudosh "dmsetup remove #{File.basename(partition)}" if `sudo dmsetup ls | grep #{File.basename(partition)}`.length > 0
     [rootfs, bootfs].each { |fs|
       sudosh "dmsetup remove #{File.basename(fs.partition)}" if `sudo dmsetup ls | grep #{File.basename(fs.partition)}`.length > 0
@@ -88,6 +90,6 @@ namespace :sd do
   task :make_all => [ :copy_all, :unmount_all ]
 
   desc "Format, mkfs, and copy files to a card.  Destroys any existing data on the card without asking!"
-  task :create_card => [ :unmount_all, :format_card, :make_all, :unmount_all ]
+  task :create => [ :unmount_all, :format, :make_all, :unmount_all ]
 
 end
