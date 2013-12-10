@@ -19,12 +19,15 @@ def is_mounted( device )
   `mount | grep #{device}`.length > 0
 end
 
+def topdir
+  Pathname.new(__FILE__).parent.parent
+end
 
 def deploy_dir
-  @deploy_dir ||= (ENV['DEPLOY_DIR'] || File::dirname(__FILE__) + "/../build/tmp-angstrom_v2012_05-eglibc/deploy/images/beaglebone")
+  ENV['DEPLOY_DIR'] || topdir.join("deploy/eglibc/images/beaglebone/") 
 end
 
 def in_deploy_dir( fname )
-  deploy_dir + "/" + fname
+  deploy_dir.join(fname)
 end
 

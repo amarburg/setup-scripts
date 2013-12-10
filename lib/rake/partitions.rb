@@ -4,7 +4,6 @@ class Partition
   include Rake::DSL
 
   attr_accessor :name, :fs, :mkfs, :partition_number, :before_mkfs
-  attr_writer :mountpoint
 
   def initialize( name )
     @name = name
@@ -45,8 +44,14 @@ class Partition
     device + partition_number.to_s
   end
 
+  def mountpoint=(a)
+    @mountpoint = Pathname.new(a)
+  end
+
   def mountpoint
-    @mountpoint ||= "/mnt/#{name}"
+    @mountpoint ||= Pathname.new("/mnt/#{name}")
+    FileUtils.mkdir_p @mountpoint unless @mountpoint.directory?
+    @mountpoint
   end
 
   def mounted?
@@ -88,15 +93,23 @@ class Partition
                    [file, File.basename(file)]
                  end
       dest = [mountpoint,dest].join('/')
-      puts "Copying #{src} to #{dest}"
+      #puts "Copying #{src} to #{dest}"
+      sudosh "cp --dereference  #{src} #{dest}"
     }
   end
 
 end
 
 class RootPartition < Partition
+  attr_accessor :image
+
+  def initialize(name)
+    @image = nil
+    super name
+  end
+
   def copy_files
-  sudosh "tar -xjv -C #{mountpoint} -f #{in_deploy_dir("systemd-image-beaglebone.tar.bz2")}"
+    sudosh "tar -xzv -C #{mountpoint} -f #{image}"
   end
 end
 
